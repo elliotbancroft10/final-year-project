@@ -10,25 +10,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import datetime
 
-
-#import imgaug.augmenters as iaa
-
 inference = False
-
-# ===============
-# check GPU, cuda
-# ===============
 
 # set device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # check if CUDA is available
 use_cuda = torch.cuda.is_available()
-
-# ===============
-# Hyperparameters
-# ===============
-# YOUR HYPERPARAMETERS
 
 # list of directories for stress/damage fields
 lst_dir0 = list()
@@ -51,13 +39,6 @@ else:  #train data
     #lst_dir0.append( r"D:\data\unseen\L0.05_vf0.6\h0.0002" )
     dir_mesh = r"D:\data\mesh" 
 
-## data augmentation
-#transform = iaa.Sequential(
-#    [
-#        iaa.TranslateX(percent=(0.,0.99), mode="wrap"),
-#        iaa.TranslateY(percent=(0.,0.99), mode="wrap"),
-#    ]
-#)
 fieldtype = "stress"
 # load the data
 train_loader, test_loaders, output_encoder = load_fracture_mesh_stress(
@@ -71,8 +52,7 @@ train_loader, test_loaders, output_encoder = load_fracture_mesh_stress(
                          positional_encoding=True,
                          encode_input=False,
                          encode_output=False,
-                         encoding='channel-wise')
-
+                         encoding='channel-wise'
 
 # create a tensorised FNO model
 model = TFNO( n_modes=(251, 251), 
@@ -81,9 +61,7 @@ model = TFNO( n_modes=(251, 251),
               factorization='tucker', rank=0.42)
 
 model.load_state_dict(torch.load('C:/Users/Elliot/Documents/fyp/fno/stressmodel.pth'))
-#######################################################################################
-#model.eval()
-#######################################################################################
+
 model = model.to(device)
 
 n_params = count_params(model)
@@ -104,7 +82,6 @@ h1loss = H1Loss(d=2, reduce_dims=[0,1])
 train_loss = h1loss
 eval_losses={'h1': h1loss, 'l2': l2loss}
 
-
 # %%
 print('\n### MODEL ###\n', model)
 print('\n### OPTIMIZER ###\n', optimizer)
@@ -114,7 +91,7 @@ print(f'\n * Train: {train_loss}')
 print(f'\n * Test: {eval_losses}')
 sys.stdout.flush()
 
-'''
+
 # Create the trainer
 trainer = Trainer(model, n_epochs=20,
                   device=device,
@@ -123,8 +100,6 @@ trainer = Trainer(model, n_epochs=20,
                   log_test_interval=1,
                   use_distributed=False,
                   verbose=True)
-
-
 # Train the model
 i = trainer.train(train_loader, test_loaders,
                      output_encoder,
@@ -137,14 +112,6 @@ i = trainer.train(train_loader, test_loaders,
 #print(i)
 # save the model
 #torch.save(model.state_dict(), 'C:/Users/Elliot/Documents/fyp/fno/stressmodel.pth')
-'''
-
-# load the model
-
-
-
-# %%
-# Plot the prediction, and compare with the ground-truth 
 
 test_samples = test_loaders[251].dataset
 model.cpu()
@@ -171,9 +138,7 @@ for index in range(3):
         ax1.set_title('Input x')
     plt.xticks([], [])
     plt.yticks([], [])
-    ###
     
-    ###
     ax2 = fig.add_subplot(3, 5, index*5 + 2)
     im = ax2.imshow(y[0].squeeze(), cmap = 'rainbow', norm = mpl.colors.Normalize(vmin = -0.25, vmax = 1.95))
     if index == 0: 
@@ -181,7 +146,7 @@ for index in range(3):
     plt.xticks([], [])
     plt.yticks([], [])
     plt.colorbar(im, ax = ax2, fraction = 0.050, pad = 0.04)
-    #
+    
     ax3 = fig.add_subplot(3, 5, index*5 + 3)
     im = ax3.imshow(out[0,0].squeeze().detach().numpy(), cmap = 'rainbow', norm = mpl.colors.Normalize(vmin = -0.25, vmax = 1.95))
     if index == 0: 
@@ -189,7 +154,7 @@ for index in range(3):
     plt.xticks([], [])
     plt.yticks([], [])
     plt.colorbar(im, ax = ax3, fraction = 0.050, pad = 0.04)
-    #
+    
     ax4 = fig.add_subplot(3, 5, index*5 + 4)
     im = ax4.imshow(y[1].squeeze(), cmap = 'rainbow', norm = mpl.colors.Normalize(vmin = -0.25, vmax = 1.95))
     if index == 0: 
@@ -197,7 +162,7 @@ for index in range(3):
     plt.xticks([], [])
     plt.yticks([], [])
     plt.colorbar(im, ax = ax4, fraction = 0.050, pad = 0.04)
-    #
+    
     ax5 = fig.add_subplot(3, 5, index*5 + 5)
     im = ax5.imshow(out[0,1].squeeze().detach().numpy(), cmap = 'rainbow', norm = mpl.colors.Normalize(vmin = -0.25, vmax = 1.95))
     if index == 0: 
@@ -214,10 +179,3 @@ plt.tight_layout()
 dt = datetime.datetime.now()
 dt_string = dt.strftime("%d-%m-%Y_%H;%M;%S")
 fig.savefig('C:/Users/Elliot/Pictures/fyp_images/FNOresults/' + ('{}_{}').format(fieldtype, dt_string),)
-#fig.show()
-
-
-#fig.savefig('C:/Users/Elliot/Pictures/fyp_images/FNOresults/' + 'error' + ('_{}').format(dt_string))
-
-
-

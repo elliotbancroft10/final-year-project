@@ -10,15 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import datetime
 
-
-
-#import imgaug.augmenters as iaa
-
 inference = True
-
-# ===============
-# check GPU, cuda
-# ===============
 
 # set device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -26,15 +18,9 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # check if CUDA is available
 use_cuda = torch.cuda.is_available()
 
-# ===============
-# Hyperparameters
-# ===============
-# YOUR HYPERPARAMETERS
-
 # list of directories for stress/damage fields
 lst_dir0 = list()
 lst_idx_UC = list()
-
 
 if inference==True: #unseen data
     shuffle = False
@@ -50,13 +36,6 @@ else:  #train data
     lst_dir0.append( r"D:\data\L0.05_vf0.5\h0.0002" )
     dir_mesh = r"D:\data\mesh"
 
-## data augmentation
-#transform = iaa.Sequential(
-#    [
-#        iaa.TranslateX(percent=(0.,0.99), mode="wrap"),
-#        iaa.TranslateY(percent=(0.,0.99), mode="wrap"),
-#    ]
-#)
 fieldtype = "stress"
 downsample_ratio = "2"
 # load the data
@@ -72,8 +51,6 @@ train_loader, test_loaders, output_encoder = load_fracture_mesh_strain_ds(
                          encode_input=False,
                          encode_output=False,
                          encoding='channel-wise')
-
-
 
 # create a tensorised FNO model
 model = TFNO( n_modes=(251, 251), 
@@ -102,7 +79,6 @@ h1loss = H1Loss(d=2, reduce_dims=[0,1])
 
 train_loss = h1loss
 eval_losses={'h1': h1loss, 'l2': l2loss}
-
 
 # %%
 print('\n### MODEL ###\n', model)
@@ -138,15 +114,11 @@ trainer.train(train_loader, test_loaders,
 #torch.save(model.state_dict(), '../model/fno/model.pth')
 '''
 
-
-
-
 # %%
 # Plot the prediction, and compare with the ground-truth 
 
 test_samples = test_loaders[251].dataset
 model.cpu()
-
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -170,9 +142,7 @@ for index in range(3):
         ax1.set_title('Input x')
     plt.xticks([], [])
     plt.yticks([], [])
-    ###
     
-    ###
     ax2 = fig.add_subplot(3, 5, index*5 + 2)
     im = ax2.imshow(y[0].squeeze(), cmap = 'rainbow', norm = mpl.colors.Normalize(vmin = -0.25, vmax = 1.95))
     if index == 0: 
@@ -204,8 +174,6 @@ for index in range(3):
     plt.xticks([], [])
     plt.yticks([], [])
     plt.colorbar(im, ax = ax5, fraction = 0.050, pad = 0.04)
-#cax = fig.add_axes([0.9, 0.13, 0.02, 0.70])
-#fig.colorbar(im, orientation='vertical', cax=cax)
 
 fig.suptitle('Inputs, Ground-truth Output and Model Prediction.', y=0.98)
 plt.tight_layout()
@@ -213,7 +181,3 @@ plt.tight_layout()
 dt = datetime.datetime.now()
 dt_string = dt.strftime("%d-%m-%Y_%H;%M;%S")
 fig.savefig('C:/Users/Elliot/Pictures/fyp_images/FNOresults/' + ('{}_{}').format(fieldtype, dt_string))
-#fig.show()
-
-
-#fig.savefig('C:/Users/Elliot/Pictures/fyp_images/FNOresults/' + 'error' + ('_{}').format(dt_string))

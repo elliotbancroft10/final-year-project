@@ -2,14 +2,11 @@ import torch
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
-
 import matplotlib.pyplot as plt
 from utilities3 import *
-
 import operator
 from functools import reduce
 from functools import partial
-
 from timeit import default_timer
 import scipy.io
 
@@ -131,11 +128,9 @@ class Net2d(nn.Module):
 
         return c
 
-
 t1 = default_timer()
 
 TEST_PATH = 'data/ns_data_V1e-4_N20_T50_test.mat'
-
 
 ntest = 20
 
@@ -188,7 +183,6 @@ with torch.no_grad():
     test_l2 = 0
     for x, y in test_loader:
         x, y = x.cuda(), y.cuda()
-
         out = model(x)
         pred[index] = out
         loss = myloss(out.view(1, -1), y.view(1, -1)).item()

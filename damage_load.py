@@ -1,23 +1,16 @@
 import torch
 from torch.utils.data import Dataset
 from torchvision import datasets
-
 import numpy as np
 import vtk
 from vtk.util.numpy_support import vtk_to_numpy
 import re
 import os
 import glob
-
 from neuralop.datasets.tensor_dataset import TensorDataset
 from neuralop.datasets.transforms import PositionalEmbedding
 from neuralop.utils import UnitGaussianNormalizer
 
-
-
-# =====================
-# some helper functions
-# =====================
 def vtkFieldReader(vtk_name, fieldName='tomo_Volume'):
     reader = vtk.vtkStructuredPointsReader()
     reader.SetFileName(vtk_name)
@@ -37,7 +30,6 @@ def read_macroStressStrain(fname):
         data.append( [float(num) for num in line.split()] )
     return np.array(data)
 
-
 def registerFileName(lst_stress=None, lst_strain=None, lst_damage=None, fprefix=None, loadstep=None, zeroVTK=False):
     if zeroVTK is False:
         if lst_stress is not None:
@@ -52,7 +44,6 @@ def registerFileName(lst_stress=None, lst_strain=None, lst_damage=None, fprefix=
             for key in lst_damage:
                 lst_damage[key].append(fprefix + '_' + key + '_' + str(loadstep) + '.vtk')
     else:
-
         zeroVTKlocation = 'zerovtk.vtk'
 
         if lst_stress is not None:
@@ -105,7 +96,6 @@ mesh_paths = (r"D:\data\mesh\L0.05_vf0.3\h0.0002",
 response_paths = (r"D:\data\L0.05_vf0.3\h0.0002",
                r"D:\data\L0.05_vf0.5\h0.0002")
 
-
 def load_fracture_mesh_macrocurve( response_paths, mesh_paths,
                  n_train, n_tests,
                  batch_size, test_batch_sizes,
@@ -145,7 +135,6 @@ def load_fracture_mesh_macrocurve( response_paths, mesh_paths,
                 # appending values to output list
                 y.append(np.array([eps, sig]))
 
-    ##
     x = np.expand_dims(np.array(x), 1)  # BxCxWxHxD
     y = np.expand_dims(np.expand_dims(np.array(y), -1), -1)  # BxCxWxHxD, TODO: check if y needs normalisation
 
@@ -153,7 +142,6 @@ def load_fracture_mesh_macrocurve( response_paths, mesh_paths,
     x_train = torch.from_numpy(x[idx_train, :, :, :, 0]).type(torch.float32).clone()
     y_train = torch.from_numpy(y[idx_train, :, :, :, 0]).type(torch.float32).clone()
 
-    #
     test_batch_size = test_batch_sizes[0]
     test_resolution = test_resolutions[0]
 
@@ -162,20 +150,19 @@ def load_fracture_mesh_macrocurve( response_paths, mesh_paths,
     x_test = torch.from_numpy(x[idx_test, :, :, :, 0]).type(torch.float32).clone()
     y_test = torch.from_numpy(y[idx_test, :, :, :, 0]).type(torch.float32).clone()
 
-    ## input encoding
+    # input encoding
     if encode_input:
         if encoding == 'channel-wise':
             reduce_dims = list(range(x_train.ndim))
         elif encoding == 'pixel-wise':
             reduce_dims = [0]
-
         input_encoder = UnitGaussianNormalizer(x_train, reduce_dim=reduce_dims)
         x_train = input_encoder.encode(x_train)
         x_test = input_encoder.encode(x_test.contiguous())
     else:
         input_encoder = None
 
-    ## output encoding
+    # output encoding
     if encode_output:
         if encoding == 'channel-wise':
             reduce_dims = list(range(y_train.ndim))
@@ -187,14 +174,14 @@ def load_fracture_mesh_macrocurve( response_paths, mesh_paths,
     else:
         output_encoder = None
 
-    ## training dataset
+    # training dataset
     train_db = TensorDataset(x_train, y_train,
                              transform_x=PositionalEmbedding(grid_boundaries, 0) if positional_encoding else None)
     train_loader = torch.utils.data.DataLoader(train_db,
                                                batch_size=batch_size, shuffle=True,
                                                num_workers=0, pin_memory=True, persistent_workers=False)
 
-    ## test dataset
+    # test dataset
     test_db = TensorDataset(x_test, y_test,
                             transform_x=PositionalEmbedding(grid_boundaries, 0) if positional_encoding else None)
     test_loader = torch.utils.data.DataLoader(test_db,
@@ -205,9 +192,6 @@ def load_fracture_mesh_macrocurve( response_paths, mesh_paths,
     test_loaders[test_resolution] = test_loader  # currently, only 1 resolution is possible
 
     return train_loader, test_loaders, output_encoder
-
-    ############
-
 
 def load_damage_field_prediction(lst_dir0, dir_mesh,
                               n_train, n_tests,
@@ -233,13 +217,10 @@ def load_damage_field_prediction(lst_dir0, dir_mesh,
 
         #loop over folders in mesh directory to set a same order and have them correspond
         for folder in os.listdir(response_path):
-            #if folder == '.DS_Store':
-                #continue
             # initial geometry from mesh
             img_names = glob.glob(f'{mesh_path}/{folder}.vtk')
             # appending geometries to the input list
             [x.append(vtkFieldReader(name, 'tomo_Volume')) for name in img_names]
-
 
             # output: stress (filename)
             registerFileName(lst_damage=out_field,
@@ -257,7 +238,7 @@ def load_damage_field_prediction(lst_dir0, dir_mesh,
             y.append(output)
         except:
             continue
-    ##
+    
     x = np.expand_dims(np.array(x), 1)  # BxCxWxHxD
     y = np.expand_dims(np.moveaxis(np.array(y), -1, 1), -1)  # BxCxWxHxD
 
@@ -265,7 +246,6 @@ def load_damage_field_prediction(lst_dir0, dir_mesh,
     x_train = torch.from_numpy(x[idx_train, :, :, :, 0]).type(torch.float32).clone()
     y_train = torch.from_numpy(y[idx_train, :, :, :, 0]).type(torch.float32).clone()
 
-    #
     test_batch_size = test_batch_sizes[0]
     test_resolution = test_resolutions[0]
 
@@ -274,7 +254,7 @@ def load_damage_field_prediction(lst_dir0, dir_mesh,
     x_test = torch.from_numpy(x[idx_test, :, :, :, 0]).type(torch.float32).clone()
     y_test = torch.from_numpy(y[idx_test, :, :, :, 0]).type(torch.float32).clone()
 
-    ## input encoding
+    # input encoding
     if encode_input:
         if encoding == 'channel-wise':
             reduce_dims = list(range(x_train.ndim))
@@ -287,7 +267,7 @@ def load_damage_field_prediction(lst_dir0, dir_mesh,
     else:
         input_encoder = None
 
-    ## output encoding
+    # output encoding
     if encode_output:
         if encoding == 'channel-wise':
             reduce_dims = list(range(y_train.ndim))
@@ -299,14 +279,14 @@ def load_damage_field_prediction(lst_dir0, dir_mesh,
     else:
         output_encoder = None
 
-    ## training dataset
+    # training dataset
     train_db = TensorDataset(x_train, y_train,
                              transform_x=PositionalEmbedding(grid_boundaries, 0) if positional_encoding else None)
     train_loader = torch.utils.data.DataLoader(train_db,
                                                batch_size=batch_size, shuffle=True,
                                                num_workers=0, pin_memory=True, persistent_workers=False)
 
-    ## test dataset
+    # test dataset
     test_db = TensorDataset(x_test, y_test,
                             transform_x=PositionalEmbedding(grid_boundaries, 0) if positional_encoding else None)
     test_loader = torch.utils.data.DataLoader(test_db,

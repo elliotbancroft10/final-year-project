@@ -7,8 +7,6 @@ import numpy as np
 import pandas as pd
 import csv
 
-
-
 x = []
 y1 = []
 y2 = []
